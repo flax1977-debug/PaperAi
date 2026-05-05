@@ -1,0 +1,28 @@
+{
+  "name": "PaperAI Flutter",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/flutter:2": {
+      "version": "stable"
+    }
+  },
+  "forwardPorts": [3000, 8080],
+  "postCreateCommand": "flutter --version && flutter config --no-analytics && flutter create . --platforms=web,android,ios --org com.paperai && flutter pub get",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.dart-code",
+        "Dart-Code.flutter"
+      ],
+      "settings": {
+        "dart.flutterSdkPath": "/home/vscode/flutter",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "[dart]": {
+          "editor.defaultFormatter": "Dart-Code.dart-code"
+        }
+      }
+    }
+  },
+  "remoteUser": "vscode"
+}
