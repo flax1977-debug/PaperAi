@@ -2,6 +2,7 @@ name: DraftMyVan manifest
 
 # Scoped to draftmyvan/** so this never touches the PaperAI Flutter app.
 on:
+  workflow_dispatch:
   push:
     branches: ["**"]
     paths:
