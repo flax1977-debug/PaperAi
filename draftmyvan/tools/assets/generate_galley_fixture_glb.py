@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
-"""Generate a deterministic rectangular-box GLB matching a manifest entry.
+"""Generate the deterministic galley_1000 GLB test fixture.
 
 This is a **test-fixture generator**, not an art tool. Its job is to
 produce a geometrically-correct stand-in so the manifest → validator →
 asset pipeline can be exercised end-to-end before any polished cabinet
 art exists.
 
-Inputs:
-    --manifest <path>   Path to the manifest JSON.
-    --out <path>        Where to write the GLB.
+Default invocation (no flags) regenerates the canonical fixture in place:
+
+    cd draftmyvan
+    python tools/assets/generate_galley_fixture_glb.py
+    # reads  examples/galley_1000.json
+    # writes examples/assets/galley_1000.glb
+
+Both inputs can be overridden:
+    --manifest <path>   Override the manifest source.
+    --out <path>        Override the GLB output path.
 
 The generated GLB:
     * Has exactly the bounding box implied by the manifest's
@@ -177,14 +184,23 @@ def make_box_glb_from_manifest(manifest: dict) -> bytes:
     return header + json_chunk + bin_chunk
 
 
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # draftmyvan/
+DEFAULT_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
+DEFAULT_OUT = REPO_ROOT / "examples" / "assets" / "galley_1000.glb"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Generate a deterministic box GLB from a DraftMyVan manifest entry.",
+        description="Generate the deterministic galley_1000 GLB test fixture.",
     )
-    parser.add_argument("--manifest", required=True, type=Path,
-                        help="Path to the manifest JSON.")
-    parser.add_argument("--out", required=True, type=Path,
-                        help="Output GLB path.")
+    parser.add_argument(
+        "--manifest", type=Path, default=DEFAULT_MANIFEST,
+        help=f"Manifest JSON (default: examples/galley_1000.json).",
+    )
+    parser.add_argument(
+        "--out", type=Path, default=DEFAULT_OUT,
+        help=f"Output GLB path (default: examples/assets/galley_1000.glb).",
+    )
     args = parser.parse_args(argv)
 
     if not args.manifest.exists():

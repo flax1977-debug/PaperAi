@@ -6,7 +6,7 @@ Today's contents:
 
 | file | what it is | how it is made |
 |---|---|---|
-| `galley_1000.glb` | Geometric contract fixture for `galley_1000_sink_left_oak`: a plain 1000×520×900 mm box anchored at the floor back-left corner. See `galley_1000.glb.md`. | Generated deterministically by `tools/assets/generate_box_glb.py` from `examples/galley_1000.json`. Pinned to that output by `tests/test_galley_fixture.py`. |
+| `galley_1000.glb` | Geometric contract fixture for `galley_1000_sink_left_oak`: a plain 1000×520×900 mm box anchored at the floor back-left corner. See `galley_1000.glb.md`. | Generated deterministically by `tools/assets/generate_galley_fixture_glb.py` from `examples/galley_1000.json`. Pinned to that output by `tests/test_galley_fixture.py`. |
 
 ## Why fixtures live here
 
@@ -21,9 +21,12 @@ Real, polished GLBs cannot land before:
 ## Adding a new fixture
 
 1. Add the manifest entry under `draftmyvan/examples/`.
-2. Run `python tools/assets/generate_box_glb.py --manifest <new>.json --out <new>.glb`.
-3. Commit both files.
-4. Add a regression test analogous to `test_committed_fixture_matches_generator_byte_for_byte`.
+2. Either extend `tools/assets/generate_galley_fixture_glb.py` (e.g. add a
+   default-target argument) or write a sibling script. Each generator must
+   stay stdlib-only and deterministic.
+3. Commit the manifest and generated GLB together.
+4. Add a regression test analogous to
+   `test_committed_fixture_matches_generator_byte_for_byte`.
 
 ## Replacing a fixture with real art (future)
 

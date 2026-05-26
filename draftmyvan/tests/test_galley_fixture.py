@@ -3,7 +3,7 @@
 These are the regression / determinism gates for the test-fixture asset:
 
   * The committed `examples/assets/galley_1000.glb` is byte-identical to
-    what `tools/assets/generate_box_glb.py` produces from the manifest.
+    what `tools/assets/generate_galley_fixture_glb.py` produces from the manifest.
     If someone hand-edits the binary, or changes the generator, this
     test fails immediately.
   * The committed fixture passes the full Blender-side validator
@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "tools" / "blender"))
 sys.path.insert(0, str(REPO_ROOT / "tools" / "assets"))
 
-import generate_box_glb as gen           # noqa: E402
+import generate_galley_fixture_glb as gen  # noqa: E402
 import validate_glb_against_manifest as v  # noqa: E402
 
 SAMPLE_MANIFEST = REPO_ROOT / "examples" / "galley_1000.json"
@@ -47,9 +47,8 @@ def test_committed_fixture_matches_generator_byte_for_byte() -> None:
     committed = FIXTURE_GLB.read_bytes()
     assert generated == committed, (
         "committed examples/assets/galley_1000.glb does not match the "
-        "output of tools/assets/generate_box_glb.py. Regenerate with: "
-        "python tools/assets/generate_box_glb.py --manifest "
-        "examples/galley_1000.json --out examples/assets/galley_1000.glb"
+        "output of tools/assets/generate_galley_fixture_glb.py. Regenerate with: "
+        "python tools/assets/generate_galley_fixture_glb.py"
     )
 
 

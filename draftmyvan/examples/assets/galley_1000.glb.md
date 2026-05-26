@@ -6,7 +6,7 @@ fixture**. It is not visual production art.
 ## What it is
 
 A closed axis-aligned box, generated deterministically from
-`examples/galley_1000.json` by `tools/assets/generate_box_glb.py`:
+`examples/galley_1000.json` by `tools/assets/generate_galley_fixture_glb.py`:
 
 | dimension | value |
 |---|---|
@@ -45,9 +45,8 @@ any polished cabinet art exists. Specifically:
 
 ```bash
 cd draftmyvan
-python tools/assets/generate_box_glb.py \
-    --manifest examples/galley_1000.json \
-    --out examples/assets/galley_1000.glb
+python tools/assets/generate_galley_fixture_glb.py
+# (equivalent to: --manifest examples/galley_1000.json --out examples/assets/galley_1000.glb)
 ```
 
 If the regenerated file's bytes differ from the committed file, the

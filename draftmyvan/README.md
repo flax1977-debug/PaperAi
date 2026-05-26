@@ -67,7 +67,7 @@ python -m tests.test_galley_fixture               # committed fixture + generato
 
 Each suite prints `N/N passed` on success. None of them require Blender —
 the fixture suite uses a pure-Python GLB generator
-(`tools/assets/generate_box_glb.py`) and pins the committed
+(`tools/assets/generate_galley_fixture_glb.py`) and pins the committed
 `examples/assets/galley_1000.glb` to that generator's output byte-for-byte.
 
 ## Blender asset validation gate
