@@ -80,16 +80,55 @@ PASS  test_negative_unknown_extra_field_nested_rejected
 10/10 passed
 ```
 
+## Blender asset validation gate
+
+This is the defence against the architecture doc's #1 fatal risk: visual
+asset scale drift. See `tools/blender/README.md` for the full description;
+the short version is below.
+
+**Why it exists.** A GLB that looks correct in UE5 but whose bounding box
+disagrees with `dimensions_mm` silently invalidates every cut list,
+clearance check, and placement rule downstream. We refuse to commit any
+GLB until it has passed this gate.
+
+**Two execution modes.**
+
+* `tools/blender/validate_glb_against_manifest.py` — pure Python, no
+  Blender. Reads the GLB's POSITION accessor `min`/`max` arrays. Runs in
+  CI and locally.
+
+  ```bash
+  python tools/blender/validate_glb_against_manifest.py \
+      --manifest examples/galley_1000.json \
+      --glb path/to/galley_1000.glb
+  ```
+
+* `tools/blender/validate_in_blender.py` — runs inside Blender for the
+  authoritative bbox (handles non-identity transforms).
+
+  ```bash
+  blender --background --python \
+      draftmyvan/tools/blender/validate_in_blender.py -- \
+      --manifest draftmyvan/examples/galley_1000.json \
+      --glb path/to/galley_1000.glb
+  ```
+
+**Pass / fail.** Exit 0 = every axis within tolerance (`--tolerance-mm`,
+default 1 mm). Exit 1 = drift. Exit 2 = malformed manifest or unreadable
+GLB. The asset is not committable until the exit code is 0.
+
 ## CI
 
-`.github/workflows/draftmyvan.yml` runs the validator (`--all`) and the test
-suite on every push and pull request that touches `draftmyvan/**` or the
-workflow file itself. It does **not** run for changes that only touch the
-PaperAI Flutter app.
+`.github/workflows/draftmyvan.yml` runs the manifest validator (`--all`) and
+both test suites — `tests.test_validator` and
+`tests.test_blender_manifest_contract` — on every push and pull request
+that touches `draftmyvan/**` or the workflow file itself. It does **not**
+run for changes that only touch the PaperAI Flutter app. Blender itself is
+intentionally not installed in CI; the Blender mode is a local-only gate.
 
 ## What's next (not in this slice)
 
-1. Blender export script that reads a manifest entry and **verifies** the GLB's
-   bounding box matches `dimensions_mm` before saving.
-2. UE5 Data Asset / importer that consumes the manifest at editor time.
-3. Fusion 360 add-in that regenerates a parametric template from the same entry.
+1. UE5 Data Asset / importer that consumes the manifest at editor time.
+2. Fusion 360 add-in that regenerates a parametric template from the same entry.
+3. Collision-proxy and material-slot enforcement in the GLB validator.
+4. Origin / anchor alignment enforcement (requires agreement with UE5 import).
