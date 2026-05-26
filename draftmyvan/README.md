@@ -60,13 +60,15 @@ OK    examples/galley_1000.json
 
 ```bash
 cd draftmyvan
-python -m tests.test_validator                    # 10 tests — schema + manifest
-python -m tests.test_blender_manifest_contract    # 30 tests — Blender gate, anchor enforcement
+python -m tests.test_validator                    # schema + manifest
+python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
+python -m tests.test_galley_fixture               # committed fixture + generator determinism
 ```
 
-Each suite prints `N/N passed` on success. The Blender contract suite
-includes synthetic GLB blobs and exercises origin/anchor enforcement for
-`floor_back_left`; it does **not** require Blender.
+Each suite prints `N/N passed` on success. None of them require Blender —
+the fixture suite uses a pure-Python GLB generator
+(`tools/assets/generate_box_glb.py`) and pins the committed
+`examples/assets/galley_1000.glb` to that generator's output byte-for-byte.
 
 ## Blender asset validation gate
 

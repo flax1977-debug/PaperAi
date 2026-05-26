@@ -1,20 +1,35 @@
-# Asset placeholders
+# Asset directory
 
-This directory is **intentionally empty** of real GLBs. The DraftMyVan
-catalog has no committed binary art yet — and committing untested
-high-poly meshes before the Blender validation gate is proven would
-defeat the gate's purpose.
+This directory holds **test-fixture GLBs**, not production art.
 
-Real GLBs for each manifest entry should land here (or in a configured
-LFS / asset-bucket path) once:
+Today's contents:
 
-1. The pure-Python validator
-   (`draftmyvan/tools/blender/validate_glb_against_manifest.py`) is
-   accepted into CI.
-2. A reproducible Blender export procedure exists and is documented.
-3. Each candidate GLB has been validated locally with both the pure
-   Python and Blender modes.
+| file | what it is | how it is made |
+|---|---|---|
+| `galley_1000.glb` | Geometric contract fixture for `galley_1000_sink_left_oak`: a plain 1000×520×900 mm box anchored at the floor back-left corner. See `galley_1000.glb.md`. | Generated deterministically by `tools/assets/generate_box_glb.py` from `examples/galley_1000.json`. Pinned to that output by `tests/test_galley_fixture.py`. |
 
-Until then, manifest entries reference paths (e.g.
-`assets/galley_1000.glb`) that will resolve under this directory once the
-first GLB is exported.
+## Why fixtures live here
+
+Real, polished GLBs cannot land before:
+
+1. The manifest validator passes (PR #3 ✔).
+2. The Blender/pure-Python scale-drift gate passes (PR #4 ✔).
+3. The origin/anchor gate passes (PR #5 ✔).
+4. A passing fixture exists so any later real asset can be diffed
+   against a known-good geometric contract (this PR).
+
+## Adding a new fixture
+
+1. Add the manifest entry under `draftmyvan/examples/`.
+2. Run `python tools/assets/generate_box_glb.py --manifest <new>.json --out <new>.glb`.
+3. Commit both files.
+4. Add a regression test analogous to `test_committed_fixture_matches_generator_byte_for_byte`.
+
+## Replacing a fixture with real art (future)
+
+Not yet supported. Real art requires:
+
+- A documented Blender export procedure.
+- Per-PR sign-off that the polished GLB still passes every gate.
+- Collision-proxy and material-slot validation (not implemented yet — see
+  the deferred list in `draftmyvan/tools/blender/README.md`).
