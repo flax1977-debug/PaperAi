@@ -133,6 +133,31 @@ script.
 * **ERROR** (exit 2) — manifest malformed or GLB unreadable. The asset
   pipeline itself is broken.
 
+## Replacing the generated fixture with a real GLB
+
+Don't. Not yet, anyway. The committed `examples/assets/galley_1000.glb`
+is the deterministic box from
+`tools/assets/generate_galley_fixture_glb.py`, pinned to that
+generator's output by a regression test. Before swapping it for human-
+authored cabinet art:
+
+1. Read **`EXPORT_REAL_ASSET.md`** in this directory — the full
+   procedure (Blender scene setup, units, axes, origin rule,
+   apply-transforms rule, export settings, validator sweep).
+2. Sign off on **`asset_export_checklist.md`** — the one-pager you
+   tick through per asset.
+3. Run **`check_asset_ready.py`** — one command that wraps every gate
+   and prints `RESULT: READY` (or NOT READY with a diagnosis):
+
+   ```bash
+   python tools/blender/check_asset_ready.py \
+       --manifest examples/galley_1000.json \
+       --glb /tmp/candidate.glb
+   ```
+
+The actual swap (test update + sign-off marker + collision/material
+enforcement) is a separate deferred PR.
+
 ## What is *not* validated here yet
 
 * **Collision proxy presence.** `visual.collision_proxy` is expected to be a

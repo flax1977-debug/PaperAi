@@ -46,3 +46,7 @@ jobs:
       - name: Run galley-fixture suite (generator determinism + end-to-end)
         working-directory: draftmyvan
         run: python -m tests.test_galley_fixture
+
+      - name: Run check_asset_ready suite (readiness wrapper)
+        working-directory: draftmyvan
+        run: python -m tests.test_check_asset_ready
