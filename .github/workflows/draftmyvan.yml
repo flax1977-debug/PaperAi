@@ -42,3 +42,7 @@ jobs:
       - name: Run Blender-contract test suite (pure Python only)
         working-directory: draftmyvan
         run: python -m tests.test_blender_manifest_contract
+
+      - name: Run galley-fixture suite (generator determinism + end-to-end)
+        working-directory: draftmyvan
+        run: python -m tests.test_galley_fixture
