@@ -54,3 +54,11 @@ jobs:
       - name: Run package-report suite (catalog readiness)
         working-directory: draftmyvan
         run: python -m tests.test_package_report
+
+      - name: Run handoff-ready suite (extraction-readiness helper)
+        working-directory: draftmyvan
+        run: python -m tests.test_handoff_ready
+
+      - name: Run handoff-ready CLI (static-only mode)
+        working-directory: draftmyvan
+        run: python tools/handoff/check_handoff_ready.py

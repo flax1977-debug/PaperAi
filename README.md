@@ -44,3 +44,18 @@ flutter run
 
 `flutter create .` is required once to scaffold the platform folders, which are
 intentionally not committed.
+
+## DraftMyVan (incubating, planned extraction)
+
+The `draftmyvan/` directory contains a **separate project** that is currently
+incubating in this repository. It is a manufacturing-oriented 3D campervan
+configurator — manifest schema, validators, deterministic GLB fixture,
+runtime reference consumer, and a CI-gated test suite. It shares **zero**
+build coupling with the Flutter app under `lib/`; the two live side by side
+purely for incubation convenience.
+
+DraftMyVan will move to its own repository. See
+`draftmyvan/HANDOFF.md` for the briefing and
+`draftmyvan/EXTRACT_TO_REAL_REPO.md` for the step-by-step move. Until it
+has moved, changes scoped to `draftmyvan/**` are gated by the
+`Validate manifests & run tests` workflow and never touch the Flutter app.
