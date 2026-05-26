@@ -24,8 +24,14 @@ Exit codes mirror the pure-Python validator (0 pass, 1 fail, 2 error).
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
+
+# Allow `import _anchor_contract` when invoked as
+#   blender --background --python draftmyvan/tools/blender/validate_in_blender.py
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _anchor_contract import check_origin_anchor  # noqa: E402
 
 
 def _split_argv() -> list[str]:
@@ -83,6 +89,9 @@ def main() -> int:
         expected = (int(dims["width"]), int(dims["depth"]), int(dims["height"]))
     except KeyError as e:
         raise SystemExit(f"ERROR (manifest): dimensions_mm missing {e}")
+    anchor = manifest.get("anchor")
+    if not isinstance(anchor, str):
+        raise SystemExit("ERROR (manifest): missing required field 'anchor'")
 
     import bpy  # type: ignore
 
@@ -93,20 +102,32 @@ def main() -> int:
     bpy.ops.import_scene.gltf(filepath=str(args.glb))
 
     mn, mx = _world_bbox_mm()
-    actual = tuple(mx[i] - mn[i] for i in range(3))
+    actual_size = tuple(mx[i] - mn[i] for i in range(3))
 
     print(f"Manifest id:   {manifest.get('id', '?')}")
     print(f"Manifest dims: width={expected[0]} depth={expected[1]} height={expected[2]} (mm)")
-    print(f"GLB bbox (mm): width={actual[0]:.3f} depth={actual[1]:.3f} height={actual[2]:.3f}")
+    print(f"GLB bbox (mm): width={actual_size[0]:.3f} depth={actual_size[1]:.3f} height={actual_size[2]:.3f}")
 
-    ok = True
-    for name, a, e in zip(("width", "depth", "height"), actual, expected):
+    size_ok = True
+    for name, a, e in zip(("width", "depth", "height"), actual_size, expected):
         delta = a - e
         marker = "OK" if abs(delta) <= args.tolerance_mm else "FAIL"
         print(f"  [{marker}] {name}: delta={delta:+.3f} mm (tol={args.tolerance_mm} mm)")
         if marker == "FAIL":
-            ok = False
+            size_ok = False
 
+    print(f"Anchor enforcement (anchor={anchor!r}):")
+    anchor_ok, anchor_lines = check_origin_anchor(
+        (mn[0], mn[1], mn[2]),
+        (mx[0], mx[1], mx[2]),
+        expected,
+        anchor,
+        args.tolerance_mm,
+    )
+    for line in anchor_lines:
+        print(line)
+
+    ok = size_ok and anchor_ok
     print("RESULT:", "PASS" if ok else "FAIL")
     return 0 if ok else 1
 

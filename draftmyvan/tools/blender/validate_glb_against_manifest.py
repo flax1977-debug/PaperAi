@@ -36,6 +36,10 @@ Assumptions (documented; will be revisited when real assets exist):
       For hierarchies, use the Blender variant.
     * glTF positions are in metres (the spec's default convention).
       Override with --glb-units millimeters if your exporter writes mm.
+    * Origin / anchor enforcement is implemented only for the anchors
+      listed in `_anchor_contract.SUPPORTED_ANCHORS`. Any other anchor
+      value declared in the schema fails loudly here rather than being
+      silently accepted.
 """
 
 from __future__ import annotations
@@ -48,6 +52,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+# Local import — keep this file runnable as a script from anywhere by
+# anchoring sys.path to its own directory.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _anchor_contract import check_origin_anchor  # noqa: E402
 
 # glTF 2.0 binary constants
 GLB_MAGIC = b"glTF"
@@ -319,24 +328,32 @@ def validate(
         f"(units in file: {glb_units})"
     )
 
-    # Anchor contract — reported, not enforced. The exporter is expected to
-    # author the mesh so that the manifest's `anchor` corner sits at the
-    # origin, but verifying that requires the UE5 / Blender import side
-    # to declare which axis is "up" and which corner is "back-left".
-    anchor = manifest.get("anchor", "(unset)")
-    messages.append(
-        f"Anchor contract: manifest declares anchor={anchor!r}. "
-        "Origin/anchor alignment is not yet enforced by this validator — "
-        "deferred until the Blender import variant is wired up."
-    )
-
-    ok, axis_lines = compare(bbox_mm, dims_mm, tolerance_mm)
+    size_ok, axis_lines = compare(bbox_mm, dims_mm, tolerance_mm)
     messages.append("Dimension check:")
     messages.extend(axis_lines)
+
+    # Anchor / origin enforcement. See _anchor_contract for the rules.
+    anchor = manifest.get("anchor")
+    if not isinstance(anchor, str):
+        messages.append("  [FAIL] manifest is missing 'anchor'")
+        return ValidationReport(False, messages)
+    messages.append(f"Anchor enforcement (anchor={anchor!r}):")
+    bbox_min_mm = (bbox_mm.min_x, bbox_mm.min_y, bbox_mm.min_z)
+    bbox_max_mm = (bbox_mm.max_x, bbox_mm.max_y, bbox_mm.max_z)
+    anchor_ok, anchor_lines = check_origin_anchor(
+        bbox_min_mm, bbox_max_mm, dims_mm, anchor, tolerance_mm
+    )
+    messages.extend(anchor_lines)
+
+    ok = size_ok and anchor_ok
     if ok:
         messages.append("RESULT: PASS")
-    else:
+    elif not size_ok and not anchor_ok:
+        messages.append("RESULT: FAIL — bbox size and origin/anchor both off")
+    elif not size_ok:
         messages.append("RESULT: FAIL — bounding box exceeds tolerance")
+    else:
+        messages.append("RESULT: FAIL — origin/anchor alignment violates contract")
     return ValidationReport(ok, messages)
 
 
