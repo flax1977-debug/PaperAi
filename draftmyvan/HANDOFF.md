@@ -44,7 +44,7 @@ draftmyvan/
     test_galley_fixture.py       # 8 tests
     test_runtime_consumer.py     # 18 tests
     test_package_report.py       # 16 tests
-    test_handoff_ready.py        # This PR
+    test_handoff_ready.py        # 10 tests
   README.md
   HANDOFF.md                     # this file
   EXTRACT_TO_REAL_REPO.md        # step-by-step extraction checklist
@@ -128,7 +128,7 @@ python -m tests.test_blender_manifest_contract    # 30 tests
 python -m tests.test_galley_fixture               # 8 tests
 python -m tests.test_runtime_consumer             # 18 tests
 python -m tests.test_package_report               # 16 tests
-python -m tests.test_handoff_ready                # added by this PR
+python -m tests.test_handoff_ready                # 10 tests
 ```
 
 ## Current CI assumptions
@@ -140,7 +140,7 @@ python -m tests.test_handoff_ready                # added by this PR
 - Blender is **not** installed. The `bpy` validator
   (`tools/blender/validate_in_blender.py`) is documented as a
   local-only authoritative gate.
-- Trigger scope: `push` + `pull_request` on paths
+- Trigger scope: `workflow_dispatch`, plus `push` + `pull_request` on paths
   `draftmyvan/**` and `.github/workflows/draftmyvan.yml`.
   PaperAI / Flutter changes never trigger it.
 - Permissions: `contents: read`. Nothing more.
