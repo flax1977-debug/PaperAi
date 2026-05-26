@@ -221,3 +221,5 @@ fixtures, runtime reference consumer."
 
 Default branch: `main`. Branch protection: require the
 `Validate manifests & run tests` job to be green.
+
+<!-- CI nudge: 2026-05-26 — re-trigger draftmyvan workflow path filter. -->
