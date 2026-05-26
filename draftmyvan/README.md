@@ -64,6 +64,7 @@ python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
 python -m tests.test_galley_fixture               # committed fixture + generator determinism
 python -m tests.test_runtime_consumer             # manifest read as typed runtime data
+python -m tests.test_package_report               # catalog/package readiness
 ```
 
 Each suite prints `N/N passed` on success. None of them require Blender —
@@ -106,6 +107,54 @@ This package proves the manifest contract is consumable by something
 **other than a validator** — a Unity / UE5 / Flutter importer in a
 different language would implement the same shape (`Module`,
 `Dimensions`, `load_module`).
+
+## Package readiness report
+
+`runtime.package_report` is the catalog-level version of the consumer:
+"can a build / release pipeline ingest the whole `examples/` folder as
+a package?" It walks every `*.json` in a directory, loads each into a
+typed `Module`, and reports the aggregate state plus structural-
+integrity checks (duplicate ids, duplicate resolved asset paths).
+
+```bash
+cd draftmyvan
+python -m runtime.package_report examples/
+```
+
+Expected output:
+
+```
+Scanning: examples
+
+Found 1 manifest file(s):
+  examples/galley_1000.json
+
+Modules loaded: 1
+  [OK]   galley_1000_sink_left_oak → examples/assets/galley_1000.glb (present)
+
+Summary:
+  total modules:    1
+  consumable:       1
+  missing assets:   0
+  manifest errors:  0
+
+RESULT: PACKAGE READY
+```
+
+Exit codes:
+
+| code | meaning |
+|---|---|
+| 0 | `PACKAGE READY` — every manifest loaded; every GLB present. |
+| 1 | `PACKAGE NOT READY` — manifests loaded but at least one GLB is missing. |
+| 2 | `ERROR` — at least one manifest is malformed, OR duplicate ids / resolved asset paths were detected, OR the directory contains no manifests. |
+
+Like the single-module consumer, this is **not** a re-run of the
+schema or GLB validators — those gates live under `tools/` and run
+before commit. The package report answers the downstream question
+"given that the gates passed, is the catalog ready to ship?" It is
+the input a release / build / packaging script would consume — not a
+UE5 / Fusion / CNC integration.
 
 ## Blender asset validation gate
 

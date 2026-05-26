@@ -50,3 +50,7 @@ jobs:
       - name: Run runtime-consumer suite (manifest read as typed data)
         working-directory: draftmyvan
         run: python -m tests.test_runtime_consumer
+
+      - name: Run package-report suite (catalog readiness)
+        working-directory: draftmyvan
+        run: python -m tests.test_package_report
