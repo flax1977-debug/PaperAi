@@ -63,6 +63,7 @@ cd draftmyvan
 python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
 python -m tests.test_galley_fixture               # committed fixture + generator determinism
+python -m tests.test_check_asset_ready            # one-shot readiness wrapper
 ```
 
 Each suite prints `N/N passed` on success. None of them require Blender —
@@ -116,14 +117,39 @@ conversion is downstream's job and must not mutate the source GLB.
 default 1 mm). Exit 1 = drift. Exit 2 = malformed manifest or unreadable
 GLB. The asset is not committable until the exit code is 0.
 
+## Replacing the generated fixture with real art
+
+The committed `examples/assets/galley_1000.glb` is a **deterministically
+generated box**, not visual production art. Real cabinet GLBs cannot
+silently overwrite it. Before any human-authored GLB lands:
+
+1. Follow the documented procedure in
+   `tools/blender/EXPORT_REAL_ASSET.md` (the why and how).
+2. Sign off on `tools/blender/asset_export_checklist.md` (the one-pager).
+3. Run the one-shot readiness wrapper:
+   ```bash
+   python tools/blender/check_asset_ready.py \
+       --manifest examples/galley_1000.json \
+       --glb /tmp/candidate.glb
+   ```
+   `RESULT: READY` means every gate (schema, dimensions, origin/anchor)
+   passes. Anything else means the candidate is not committable.
+
+Until the deferred follow-up in PR #7's "What this does not yet do"
+section lands, the generated fixture remains the **golden boring
+reference** — it is what every later candidate is measured against,
+and it is what CI relies on to prove the pipeline still works.
+
 ## CI
 
-`.github/workflows/draftmyvan.yml` runs the manifest validator (`--all`) and
-both test suites — `tests.test_validator` and
-`tests.test_blender_manifest_contract` — on every push and pull request
-that touches `draftmyvan/**` or the workflow file itself. It does **not**
-run for changes that only touch the PaperAI Flutter app. Blender itself is
-intentionally not installed in CI; the Blender mode is a local-only gate.
+`.github/workflows/draftmyvan.yml` runs the manifest validator (`--all`)
+and four test suites — `tests.test_validator`,
+`tests.test_blender_manifest_contract`, `tests.test_galley_fixture`,
+and `tests.test_check_asset_ready` — on every push and pull request
+that touches `draftmyvan/**` or the workflow file itself. It does
+**not** run for changes that only touch the PaperAI Flutter app.
+Blender itself is intentionally not installed in CI; the Blender mode
+is a local-only gate (see `tools/blender/EXPORT_REAL_ASSET.md`).
 
 ## What's next (not in this slice)
 
