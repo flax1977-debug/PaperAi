@@ -35,6 +35,10 @@ jobs:
         working-directory: draftmyvan
         run: python tools/validate_manifest.py --all
 
-      - name: Run validator test suite
+      - name: Run manifest validator test suite
         working-directory: draftmyvan
         run: python -m tests.test_validator
+
+      - name: Run Blender-contract test suite (pure Python only)
+        working-directory: draftmyvan
+        run: python -m tests.test_blender_manifest_contract
