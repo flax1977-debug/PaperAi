@@ -63,12 +63,49 @@ cd draftmyvan
 python -m tests.test_validator                    # schema + manifest
 python -m tests.test_blender_manifest_contract    # Blender gate, anchor enforcement
 python -m tests.test_galley_fixture               # committed fixture + generator determinism
+python -m tests.test_runtime_consumer             # manifest read as typed runtime data
 ```
 
 Each suite prints `N/N passed` on success. None of them require Blender —
 the fixture suite uses a pure-Python GLB generator
 (`tools/assets/generate_galley_fixture_glb.py`) and pins the committed
 `examples/assets/galley_1000.glb` to that generator's output byte-for-byte.
+
+## Runtime consumer (reference implementation)
+
+`draftmyvan/runtime/` is the **reference consumer** of a module manifest.
+It is deliberately distinct from `tools/`: the tools directory holds
+**gates** (schema validator, GLB validator) that run before code is
+committed; `runtime/` is what something downstream — an editor
+importer, a build script, an actual app — calls to **read** an
+already-validated manifest into typed in-memory data.
+
+```bash
+cd draftmyvan
+python -m runtime.load_module examples/galley_1000.json
+```
+
+Expected output:
+
+```
+module id:        galley_1000_sink_left_oak
+type:             cabinet
+dimensions:       width=1000 depth=520 height=900 (mm)
+anchor:           floor_back_left
+placement:        floor
+glb_path:         assets/galley_1000.glb
+resolved path:    .../draftmyvan/examples/assets/galley_1000.glb
+asset present:    yes
+RESULT: CONSUMABLE
+```
+
+Exit 0 = CONSUMABLE (manifest + GLB both present). Exit 1 = GLB
+missing. Exit 2 = manifest malformed (clear error to stderr).
+
+This package proves the manifest contract is consumable by something
+**other than a validator** — a Unity / UE5 / Flutter importer in a
+different language would implement the same shape (`Module`,
+`Dimensions`, `load_module`).
 
 ## Blender asset validation gate
 
