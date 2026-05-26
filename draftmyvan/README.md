@@ -70,9 +70,22 @@ PASS  test_schema_is_valid
 PASS  test_galley_1000_validates
 PASS  test_negative_missing_required_field
 PASS  test_negative_fractional_mm_rejected
+PASS  test_negative_id_with_spaces_or_capitals_rejected
+PASS  test_negative_missing_glb_path_rejected
+PASS  test_negative_fbx_visual_path_rejected
+PASS  test_negative_negative_clearance_rejected
+PASS  test_negative_unknown_extra_field_at_root_rejected
+PASS  test_negative_unknown_extra_field_nested_rejected
 
-4/4 passed
+10/10 passed
 ```
+
+## CI
+
+`.github/workflows/draftmyvan.yml` runs the validator (`--all`) and the test
+suite on every push and pull request that touches `draftmyvan/**` or the
+workflow file itself. It does **not** run for changes that only touch the
+PaperAI Flutter app.
 
 ## What's next (not in this slice)
 
@@ -80,4 +93,3 @@ PASS  test_negative_fractional_mm_rejected
    bounding box matches `dimensions_mm` before saving.
 2. UE5 Data Asset / importer that consumes the manifest at editor time.
 3. Fusion 360 add-in that regenerates a parametric template from the same entry.
-4. CI gate: every PR that touches `draftmyvan/examples/` runs the validator.
