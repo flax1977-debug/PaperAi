@@ -336,6 +336,136 @@ def test_validate_full_path_allows_basename_override() -> None:
         assert report.ok is True
 
 
+# ---------------------------------------------------------------------------
+# Origin / anchor enforcement (PR #5)
+# ---------------------------------------------------------------------------
+
+import _anchor_contract as ac  # noqa: E402
+
+
+def _temp_manifest_with_anchor(anchor_value: str) -> Path:
+    """Write a temp copy of galley_1000.json with anchor swapped, return its path."""
+    src = v.load_manifest(SAMPLE_MANIFEST)
+    src["anchor"] = anchor_value
+    fd, tmp_path = tempfile.mkstemp(suffix=".json")
+    os.close(fd)
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(src, f)
+    return Path(tmp_path)
+
+
+def test_anchor_floor_back_left_passes_when_bbox_min_at_origin() -> None:
+    blob = _build_glb((0.0, 0.0, 0.0), (1.0, 0.52, 0.9))
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is True, "\n".join(report.messages)
+        joined = "\n".join(report.messages)
+        assert "Anchor enforcement" in joined
+        assert "[OK] min.x" in joined and "[OK] max.x" in joined
+
+
+def test_anchor_floor_back_left_fails_when_bbox_shifted_in_positive_x() -> None:
+    # Correct size 1.0 x 0.52 x 0.9 metres but shifted +0.1 m in X.
+    blob = _build_glb((0.1, 0.0, 0.0), (1.1, 0.52, 0.9))
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is False
+        joined = "\n".join(report.messages)
+        # The size check should pass (it's still 1000 mm wide); only the
+        # origin/anchor check should reject it.
+        assert "RESULT: FAIL — origin/anchor alignment violates contract" in joined
+        assert "[FAIL] min.x" in joined
+        assert "[FAIL] max.x" in joined
+
+
+def test_anchor_floor_back_left_fails_when_bbox_min_is_negative() -> None:
+    # Centered on origin: min = (-0.5, -0.26, 0), max = (0.5, 0.26, 0.9).
+    blob = _build_glb((-0.5, -0.26, 0.0), (0.5, 0.26, 0.9))
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is False
+        joined = "\n".join(report.messages)
+        assert "[FAIL] min.x" in joined
+        assert "[FAIL] min.y" in joined
+
+
+def test_anchor_unsupported_value_fails_clearly_even_if_geometry_is_correct() -> None:
+    # Geometry would satisfy floor_back_left, but the manifest declares an
+    # anchor we don't enforce yet — must fail loudly, not pass silently.
+    manifest_path = _temp_manifest_with_anchor("ceiling_back_right")
+    try:
+        blob = _build_glb((0.0, 0.0, 0.0), (1.0, 0.52, 0.9))
+        with tempfile.TemporaryDirectory() as td:
+            glb_path = Path(td) / "galley_1000.glb"
+            glb_path.write_bytes(blob)
+            report = v.validate(
+                manifest_path=manifest_path,
+                glb_path=glb_path,
+                tolerance_mm=1.0,
+                glb_units="meters",
+            )
+            assert report.ok is False
+            joined = "\n".join(report.messages)
+            assert "anchor enforcement not implemented for 'ceiling_back_right'" in joined
+    finally:
+        manifest_path.unlink(missing_ok=True)
+
+
+def test_dimension_mismatch_still_fails_after_anchor_check_added() -> None:
+    # +5 mm width drift, anchor would otherwise match.
+    blob = _build_glb((0.0, 0.0, 0.0), (1.005, 0.52, 0.9))
+    with tempfile.TemporaryDirectory() as td:
+        glb_path = Path(td) / "galley_1000.glb"
+        glb_path.write_bytes(blob)
+        report = v.validate(
+            manifest_path=SAMPLE_MANIFEST,
+            glb_path=glb_path,
+            tolerance_mm=1.0,
+            glb_units="meters",
+        )
+        assert report.ok is False
+        joined = "\n".join(report.messages)
+        assert "Dimension check:" in joined
+        assert "[FAIL] width" in joined
+
+
+def test_anchor_contract_unsupported_anchor_raises() -> None:
+    try:
+        ac.expected_corners_mm("wall_left_back", (1000, 520, 900))
+    except ac.UnsupportedAnchorError as e:
+        assert e.anchor == "wall_left_back"
+        assert "not implemented" in str(e)
+        return
+    raise AssertionError("expected UnsupportedAnchorError for unsupported anchor")
+
+
+def test_anchor_contract_expected_corners_for_floor_back_left() -> None:
+    mn, mx = ac.expected_corners_mm("floor_back_left", (1000, 520, 900))
+    assert mn == (0.0, 0.0, 0.0)
+    assert mx == (1000.0, 520.0, 900.0)
+
+
 def main() -> int:
     tests = [
         test_argparse_requires_manifest_and_glb,
@@ -361,6 +491,13 @@ def main() -> int:
         test_validate_full_path_fails_for_drift_outside_tolerance,
         test_validate_full_path_fails_on_basename_mismatch,
         test_validate_full_path_allows_basename_override,
+        test_anchor_floor_back_left_passes_when_bbox_min_at_origin,
+        test_anchor_floor_back_left_fails_when_bbox_shifted_in_positive_x,
+        test_anchor_floor_back_left_fails_when_bbox_min_is_negative,
+        test_anchor_unsupported_value_fails_clearly_even_if_geometry_is_correct,
+        test_dimension_mismatch_still_fails_after_anchor_check_added,
+        test_anchor_contract_unsupported_anchor_raises,
+        test_anchor_contract_expected_corners_for_floor_back_left,
     ]
     failed = 0
     for t in tests:

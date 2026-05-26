@@ -60,36 +60,33 @@ OK    examples/galley_1000.json
 
 ```bash
 cd draftmyvan
-python -m tests.test_validator
+python -m tests.test_validator                    # 10 tests — schema + manifest
+python -m tests.test_blender_manifest_contract    # 30 tests — Blender gate, anchor enforcement
 ```
 
-Expected:
-
-```
-PASS  test_schema_is_valid
-PASS  test_galley_1000_validates
-PASS  test_negative_missing_required_field
-PASS  test_negative_fractional_mm_rejected
-PASS  test_negative_id_with_spaces_or_capitals_rejected
-PASS  test_negative_missing_glb_path_rejected
-PASS  test_negative_fbx_visual_path_rejected
-PASS  test_negative_negative_clearance_rejected
-PASS  test_negative_unknown_extra_field_at_root_rejected
-PASS  test_negative_unknown_extra_field_nested_rejected
-
-10/10 passed
-```
+Each suite prints `N/N passed` on success. The Blender contract suite
+includes synthetic GLB blobs and exercises origin/anchor enforcement for
+`floor_back_left`; it does **not** require Blender.
 
 ## Blender asset validation gate
 
 This is the defence against the architecture doc's #1 fatal risk: visual
-asset scale drift. See `tools/blender/README.md` for the full description;
-the short version is below.
+asset scale drift, **and** the closely related risk of origin drift (right
+size, wrong position). See `tools/blender/README.md` for the full
+description; the short version is below.
 
 **Why it exists.** A GLB that looks correct in UE5 but whose bounding box
-disagrees with `dimensions_mm` silently invalidates every cut list,
+disagrees with `dimensions_mm` — or whose declared anchor corner is not
+where the contract requires it — silently invalidates every cut list,
 clearance check, and placement rule downstream. We refuse to commit any
 GLB until it has passed this gate.
+
+**Authoring coordinate contract.** Blender is the source of truth.
+`+X` = width across the van, `+Y` = module depth (back is `+Y`),
+`+Z` = floor → roof, units = metres. For `anchor = "floor_back_left"` the
+mesh's bbox-min sits at `(0, 0, 0)` and bbox-max equals
+`(width, depth, height)` converted from millimetres. UE5 / Fusion axis
+conversion is downstream's job and must not mutate the source GLB.
 
 **Two execution modes.**
 
@@ -131,4 +128,5 @@ intentionally not installed in CI; the Blender mode is a local-only gate.
 1. UE5 Data Asset / importer that consumes the manifest at editor time.
 2. Fusion 360 add-in that regenerates a parametric template from the same entry.
 3. Collision-proxy and material-slot enforcement in the GLB validator.
-4. Origin / anchor alignment enforcement (requires agreement with UE5 import).
+4. Anchor enforcement for the remaining schema-valid anchor values
+   (currently only `floor_back_left` is enforced; the rest fail loudly).
