@@ -59,7 +59,37 @@ def test_required_files_fail_when_one_is_missing() -> None:
         ok, lines = h.check_required_files(tmp)
         assert ok is False
         joined = "\n".join(lines)
-        assert "[FAIL] missing: manifest.schema.json" in joined
+        assert "[FAIL] missing file: manifest.schema.json" in joined
+    finally:
+        shutil.rmtree(tmp)
+
+
+def test_required_file_fails_when_path_is_a_directory() -> None:
+    # The Codex review caught this: path.exists() is too weak — a required
+    # file path that has been replaced by a directory of the same name
+    # would silently pass the old check. Build a tree where every required
+    # path is satisfied except manifest.schema.json, which is a directory
+    # instead of a file.
+    tmp = Path(tempfile.mkdtemp(prefix="dmv_handoff_dir_"))
+    try:
+        for rel in h.REQUIRED_FILES:
+            if rel == "manifest.schema.json":
+                # Create it as a directory, not a file.
+                (tmp / rel).mkdir(parents=True, exist_ok=True)
+                continue
+            dest = tmp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text("placeholder", encoding="utf-8")
+        ok, lines = h.check_required_files(tmp)
+        assert ok is False, (
+            "a directory at a required-file path must fail the check; "
+            "path.exists() would have accepted it"
+        )
+        joined = "\n".join(lines)
+        assert (
+            "[FAIL] expected file but found directory/non-file: manifest.schema.json"
+            in joined
+        ), joined
     finally:
         shutil.rmtree(tmp)
 
@@ -142,7 +172,7 @@ def test_cli_fails_when_pointed_at_an_empty_directory() -> None:
         assert code == 1
         out = buf.getvalue()
         assert "RESULT: HANDOFF NOT READY" in out
-        assert "[FAIL] missing:" in out
+        assert "[FAIL] missing file:" in out
     finally:
         shutil.rmtree(tmp)
 
@@ -169,6 +199,7 @@ def main() -> int:
     tests = [
         test_required_files_pass_on_current_repo,
         test_required_files_fail_when_one_is_missing,
+        test_required_file_fails_when_path_is_a_directory,
         test_no_host_app_references_in_current_draftmyvan,
         test_host_app_reference_grep_flags_temp_offender,
         test_host_app_reference_grep_does_not_flag_itself,

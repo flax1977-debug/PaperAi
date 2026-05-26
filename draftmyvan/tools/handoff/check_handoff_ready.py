@@ -94,15 +94,26 @@ DYNAMIC_TEST_MODULES: tuple[str, ...] = (
 
 
 def check_required_files(root: Path) -> tuple[bool, list[str]]:
+    """Every entry in REQUIRED_FILES must resolve to a regular file.
+
+    A path that exists but is a directory (or symlink to a directory,
+    or a socket, etc.) is treated as a failure — `is_file()` is the
+    contract, not bare existence.
+    """
     lines: list[str] = []
     ok = True
     for rel in REQUIRED_FILES:
         path = root / rel
-        if path.exists():
+        if path.is_file():
             lines.append(f"[OK]   {rel}")
+        elif not path.exists():
+            ok = False
+            lines.append(f"[FAIL] missing file: {rel}")
         else:
             ok = False
-            lines.append(f"[FAIL] missing: {rel}")
+            lines.append(
+                f"[FAIL] expected file but found directory/non-file: {rel}"
+            )
     return ok, lines
 
 
